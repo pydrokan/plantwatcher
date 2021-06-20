@@ -3,13 +3,15 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
-# include <stdlib.h>
+#include <DHT.h>
+#include <stdlib.h>
 
 // Project Files
 #include <constants.h>
 
 // Initialize stuff
-Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET); // OLED DIsplay
+DHT dht(DHT_PIN, DHT22); //DHT Temperature and Humidity sensor
 
 ////////////// OLED DISPLAY //////////////
 void oled_initialize(){
@@ -29,13 +31,19 @@ void oled_printHeadline(String headline){
   display.display();
 }
 
-void oled_printInterface(int temp, int lux, int mois){
+void oled_printInterface(float temperature, float humidity, int lux, int moisture){
   // Settings for Display Text         
   // Print Temperature
   display.setCursor(OLED_TEMP_X_ICON, OLED_TEMP_Y);        
   display.print("Temp:");            
   display.setCursor(OLED_TEMP_X, OLED_TEMP_Y);
-  display.print(temp);
+  display.print(temperature);
+
+  // Print Humidity
+  display.setCursor(OLED_HUM_X_ICON, OLED_HUM_Y);        
+  display.print("Hum:");            
+  display.setCursor(OLED_HUM_X, OLED_HUM_Y);
+  display.print(humidity);
 
   // Print Brightness
   display.setCursor(OLED_LUX_X_ICON, OLED_LUX_Y);           
@@ -47,7 +55,7 @@ void oled_printInterface(int temp, int lux, int mois){
   display.setCursor(OLED_MOIS_X_ICON, OLED_MOIS_Y);           
   display.print("Mois:");            
   display.setCursor(OLED_MOIS_X, OLED_MOIS_Y);
-  display.print(mois);
+  display.print(moisture);
 
   //Call to Display
   display.display();              
@@ -82,6 +90,26 @@ void test_led(){
   delay(delaytime);
 }
 
+////////////// DHT22 //////////////
+float dht22_read_temp(){
+    float temp = dht.readTemperature();
+    if(isnan(temp)){
+      Serial.println("Fehler beinm auslesen des Sensors(Temperature)");
+      return -1;
+    }
+    return temp;
+}
+
+float dht22_read_humidity(){
+    float hum = dht.readHumidity();
+    if(isnan(hum)){
+      Serial.println("Fehler beinm auslesen des Sensors (Humidity)");
+      return -1;
+    }
+    return hum;
+}
+
+
 ////////////// SETUP | LOOP //////////////
 void setup() {
   // put your setup code here, to run once:
@@ -92,21 +120,43 @@ void setup() {
 
   Serial.begin(BAUD_RATE);
 
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  // Initialize OLED Display
   oled_initialize();
-
-
+  // Initialize DHT22
+  dht.begin();
 }
 
 void loop() {
-  int temp = rand() % 99+1;
+
+  // OLED
+  
+  float temp = dht22_read_temp();
+  int humidity = dht22_read_humidity();
   int lux = rand() % 99 +1;
   int mois = rand() % 99 +1;
   display.clearDisplay();
   oled_printHeadline("Plantwatching \\(^_^)/");
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
-  oled_printInterface(temp, lux, mois);
+  oled_printInterface(temp, humidity, lux, mois);
   delay(REFRESH_TIME);
   
+
+  /*
+ // DHT22
+    delay(2500);
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+
+    if (isnan(h) ||isnan(t)){
+      Serial.println("Fehler beinm auslesen des Sensors");
+      return;
+    }
+    Serial.print("Luftfeuchtigkeit: ");
+    Serial.print(h);
+    Serial.print("%\t");
+    Serial.print("Temperatur: ");
+    Serial.print(t);
+    Serial.println("C");
+    */
 }
