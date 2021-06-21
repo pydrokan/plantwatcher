@@ -27,6 +27,13 @@ static const int OLED_HUM_X_ICON = 70; // Y Position for showing temperature ico
 ////// DHT22 Sensor //////
 static const int DHT_PIN = 11; // Digital Pin for DHT22
 
+////// GY30 Sensor //////
+static const int GY30_ADDR = 0x23; // I2C Address Gy30
+
+////// SOIL MOISTURE //////
+static const int MOIST_PIN = A0; // Soil Moisture Sensor Pin
+static const float MOIST_SLOPE = -1; // Slope from linear Fit
+static const float MOIST_INTERCEPT = -1; // Intercept from linear fit
 
 ////// LEDs //////
 static const int LED_RED = 13; // Pin for red LED
