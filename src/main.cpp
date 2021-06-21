@@ -4,6 +4,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <DHT.h>
+#include <BH1750.h>
 #include <stdlib.h>
 
 // Project Files
@@ -12,6 +13,7 @@
 // Initialize stuff
 Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET); // OLED DIsplay
 DHT dht(DHT_PIN, DHT22); //DHT Temperature and Humidity sensor
+BH1750 gy30(GY30_ADDR); 
 
 ////////////// OLED DISPLAY //////////////
 void oled_initialize(){
@@ -31,7 +33,7 @@ void oled_printHeadline(String headline){
   display.display();
 }
 
-void oled_printInterface(float temperature, float humidity, int lux, int moisture){
+void oled_printInterface(float temperature, float humidity, int lux, float moisture){
   // Settings for Display Text         
   // Print Temperature
   display.setCursor(OLED_TEMP_X_ICON, OLED_TEMP_Y);        
@@ -109,6 +111,37 @@ float dht22_read_humidity(){
     return hum;
 }
 
+////////////// BH1750 GY30 //////////////
+void gy30_initialize(){
+  if (gy30.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
+    Serial.println(F("BH1750 Advanced begin"));
+  }
+  else {
+    Serial.println(F("Error initialising BH1750"));
+  }
+}
+
+float gy30_measure_lux(){
+    if (gy30.measurementReady()) {
+      return gy30.readLightLevel();
+    }
+    return -1;
+}
+
+////////////// Soil Moisture Sensor //////////////
+float moist_read_voltage(){
+  Serial.print("Soil Moisture Sensor Voltage: ");
+  Serial.print((float(analogRead(MOIST_PIN))/1023.0)*3.3); // read sensor
+  Serial.println(" V");
+  return (float(analogRead(MOIST_PIN))/1023.0)*3.3;
+}
+
+float moist_calibrated_reading(){
+    float voltage, vol_water_cont; // preallocation
+    voltage = moist_read_voltage();
+    vol_water_cont = ((1.0/voltage)*MOIST_SLOPE)+MOIST_INTERCEPT; 
+    return vol_water_cont;
+}
 
 ////////////// SETUP | LOOP //////////////
 void setup() {
@@ -124,39 +157,21 @@ void setup() {
   oled_initialize();
   // Initialize DHT22
   dht.begin();
+  // Initialize GY30
+  gy30_initialize();
 }
 
 void loop() {
-
   // OLED
-  
   float temp = dht22_read_temp();
-  int humidity = dht22_read_humidity();
-  int lux = rand() % 99 +1;
-  int mois = rand() % 99 +1;
+  float humidity = dht22_read_humidity();
+  int lux = gy30_measure_lux();
+  float mois = moist_read_voltage();
   display.clearDisplay();
   oled_printHeadline("Plantwatching \\(^_^)/");
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
   oled_printInterface(temp, humidity, lux, mois);
   delay(REFRESH_TIME);
-  
 
-  /*
- // DHT22
-    delay(2500);
-    float h = dht.readHumidity();
-    float t = dht.readTemperature();
-
-    if (isnan(h) ||isnan(t)){
-      Serial.println("Fehler beinm auslesen des Sensors");
-      return;
-    }
-    Serial.print("Luftfeuchtigkeit: ");
-    Serial.print(h);
-    Serial.print("%\t");
-    Serial.print("Temperatur: ");
-    Serial.print(t);
-    Serial.println("C");
-    */
 }
